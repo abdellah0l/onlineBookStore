@@ -32,7 +32,8 @@ function App() {
                   <h1 className="text-4xl font-bold text-red-900">
                     Welcome to the Online Book Store
                   </h1>
-                  <button
+                  <div className="flex items-center justify-center mt-4">
+                    <button
                     className="ml-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                     onClick={() => (window.location.href = "/signup")}
                   >
@@ -44,6 +45,7 @@ function App() {
                   >
                     Sign In
                   </button>
+                  </div>
                 </div>
               </div>
             }
