@@ -133,17 +133,6 @@ const emptyForm = {
   genresIds: [],
 };
 
-const frameAccentClasses = [
-  "border-cyan-500/80",
-  "border-blue-500/80",
-  "border-rose-500/80",
-  "border-violet-500/80",
-  "border-green-500/80",
-  "border-red-500/80",
-  "border-zinc-300/80",
-  "border-sky-500/80",
-  "border-orange-500/80",
-];
 
 export default function AdminBooks() {
   const [books, setBooks] = useState(mockAdminBooksResponse.books);
@@ -369,53 +358,43 @@ export default function AdminBooks() {
           <span className="text-sm font-medium">Add Book</span>
         </button>
 
-        {paginatedBooks.map((book, index) => {
-          const accent = frameAccentClasses[index % frameAccentClasses.length];
-
-          return (
-            <div
-              key={book.id}
-              className="group flex flex-col items-center gap-2"
-            >
-              <div
-                className={`relative h-44 w-28 overflow-hidden rounded-lg border ${accent} bg-zinc-900 transition-transform duration-200 group-hover:scale-[1.02]`}
-              >
-                <div className="absolute inset-0 bg-zinc-900/40" />
-                <img
-                  src={book.cover_image_url}
-                  alt={book.title}
-                  className="absolute inset-0 h-full w-full object-cover opacity-45"
-                />
-                <div className="absolute inset-0 bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.12)_0_2px,transparent_2px_8px)]" />
-
-                <div className="absolute left-1.5 top-1.5 flex flex-col gap-1">
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    className="h-5 w-5 rounded-sm border border-red-400/70 bg-zinc-950/80 p-0 hover:bg-zinc-800"
-                    onClick={() => openEditDialog(book)}
-                    aria-label={`Edit ${book.title}`}
-                  >
-                    <Pencil className="h-3 w-3 text-red-300" />
-                  </Button>
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    className="h-5 w-5 rounded-sm border border-zinc-300/70 bg-zinc-950/80 p-0 hover:bg-zinc-800"
-                    onClick={() => handleDeleteBook(book.id)}
-                    aria-label={`Delete ${book.title}`}
-                  >
-                    <Trash2 className="h-3 w-3 text-zinc-200" />
-                  </Button>
-                </div>
+        {paginatedBooks.map((book) => (
+          <div key={book.id} className="group flex flex-col items-center gap-2">
+            <div className="relative h-44 w-28 overflow-hidden rounded-lg border border-white/30 bg-zinc-900 transition-transform duration-200 group-hover:scale-[1.02]">
+              <div className="absolute inset-0 bg-zinc-900/40" />
+              <img
+                src={book.cover_image_url}
+                alt={book.title}
+                className="absolute inset-0 h-full w-full object-cover opacity-45"
+              />
+              
+              <div className="absolute left-1.5 top-1.5 flex flex-col gap-1">
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  className="h-5 w-5 rounded-sm border border-red-400/70 bg-zinc-950/80 p-0 hover:bg-zinc-800"
+                  onClick={() => openEditDialog(book)}
+                  aria-label={`Edit ${book.title}`}
+                >
+                  <Pencil className="h-3 w-3 text-red-300" />
+                </Button>
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  className="h-5 w-5 rounded-sm border border-zinc-300/70 bg-zinc-950/80 p-0 hover:bg-zinc-800"
+                  onClick={() => handleDeleteBook(book.id)}
+                  aria-label={`Delete ${book.title}`}
+                >
+                  <Trash2 className="h-3 w-3 text-zinc-200" />
+                </Button>
               </div>
-
-              <span className="max-w-28 truncate text-center text-sm font-medium">
-                {book.title}
-              </span>
             </div>
-          );
-        })}
+
+            <span className="max-w-28 truncate text-center text-sm font-medium">
+              {book.title}
+            </span>
+          </div>
+        ))}
       </div>
 
       {paginationSection}

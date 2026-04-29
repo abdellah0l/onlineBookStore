@@ -8,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import SignUp from "./components/signup";
 import SignIn from "./components/signin";
 import Home from "./components/home";
+import Books from "./components/books";
 import AdminLayout from "./components/admin/admin-layout";
 import AdminDashboard from "./components/admin/dashboard";
 import AdminBooks from "./components/admin/books";
@@ -25,12 +26,8 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          <Route
-            path="/"
-            element={
-              <Home />
-            }
-          />
+          <Route path="/" element={<Home />} />
+          <Route path="/books" element={<Books />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/admin" element={<AdminLayout />}>
