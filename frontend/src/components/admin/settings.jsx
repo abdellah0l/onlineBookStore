@@ -3,27 +3,44 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Spinner } from "../ui/spinner";
-
-const mockAdminSettingsResponse = {
-    success: true,
-    admin: {
-        id: "admin-1",
-        email: "admin@bookstore.com",
-    },
-};
+import { useAdminData } from "../../contexts/AdminDataContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function AdminSettings() {
-    const [email, setEmail] = useState(mockAdminSettingsResponse.admin.email);
+    const { updateSettings } = useAdminData();
+    const { user } = useAuth();
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [message, setMessage] = useState(null);
 
     useEffect(() => {
-        const timer = setTimeout(() => setLoading(false), 500);
-        return () => clearTimeout(timer);
-    }, []);
+        if (user?.email) {
+            setEmail(user.email);
+        }
+    }, [user]);
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
+        setLoading(true);
+        setError(null);
+        setMessage(null);
+
+        try {
+            const payload = {
+                email: email || undefined,
+                password: password || undefined,
+            };
+
+            await updateSettings(payload);
+            setPassword("");
+            setMessage("Settings updated successfully.");
+        } catch (err) {
+            setError(err?.message || "Failed to update settings.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (loading) {
@@ -48,6 +65,16 @@ export default function AdminSettings() {
                     </div>
 
                     <div className="space-y-6">
+                        {error && (
+                            <p className="rounded-lg border border-rose-400/40 bg-rose-500/10 px-4 py-2 text-sm text-rose-100">
+                                {error}
+                            </p>
+                        )}
+                        {message && (
+                            <p className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-100">
+                                {message}
+                            </p>
+                        )}
                         <div className="space-y-2">
                             <Label htmlFor="admin-email" className="text-sm font-medium text-white/80">
                                 email

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import SearchBar from "../search-bar";
 import { Button } from "../ui/button";
@@ -21,107 +21,7 @@ import {
   PaginationPrevious,
 } from "../ui/pagination";
 import { Label } from "../ui/label";
-
-const mockAdminBooksResponse = {
-  success: true,
-  books: [
-    {
-      id: "b1",
-      title: "Atomic Habits",
-      author: "James Clear",
-      rating: 4.8,
-      price: 2200,
-      description: "Build good habits and break bad ones.",
-      cover_image_url:
-        "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=900&q=80",
-      pdf_url: "s3://books/atomic-habits.pdf",
-      genres: [
-        { id: "g1", name: "Self-Help" },
-        { id: "g2", name: "Productivity" },
-      ],
-    },
-    {
-      id: "b2",
-      title: "Clean Code",
-      author: "Robert C. Martin",
-      rating: 4.7,
-      price: 2800,
-      description: "A handbook of agile software craftsmanship.",
-      cover_image_url:
-        "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=900&q=80",
-      pdf_url: "s3://books/clean-code.pdf",
-      genres: [{ id: "g3", name: "Programming" }],
-    },
-    {
-      id: "b3",
-      title: "Deep Work",
-      author: "Cal Newport",
-      rating: 4.5,
-      price: 1900,
-      description: "Rules for focused success in a distracted world.",
-      cover_image_url:
-        "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=900&q=80",
-      pdf_url: "s3://books/deep-work.pdf",
-      genres: [
-        { id: "g2", name: "Productivity" },
-        { id: "g4", name: "Business" },
-      ],
-    },
-    {
-      id: "b4",
-      title: "The Pragmatic Programmer",
-      author: "Andrew Hunt",
-      rating: 4.6,
-      price: 2600,
-      description: "Journey to mastery for modern developers.",
-      cover_image_url:
-        "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=900&q=80",
-      pdf_url: "s3://books/pragmatic-programmer.pdf",
-      genres: [{ id: "g3", name: "Programming" }],
-    },
-    {
-      id: "b5",
-      title: "Rich Dad Poor Dad",
-      author: "Robert Kiyosaki",
-      rating: 4.2,
-      price: 1700,
-      description: "What the rich teach their kids about money.",
-      cover_image_url:
-        "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&w=900&q=80",
-      pdf_url: "s3://books/rich-dad-poor-dad.pdf",
-      genres: [{ id: "g4", name: "Business" }],
-    },
-    {
-      id: "b6",
-      title: "The Alchemist",
-      author: "Paulo Coelho",
-      rating: 4.4,
-      price: 1400,
-      description: "A magical story about purpose and destiny.",
-      cover_image_url:
-        "https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?auto=format&fit=crop&w=900&q=80",
-      pdf_url: "s3://books/the-alchemist.pdf",
-      genres: [{ id: "g5", name: "Novel" }],
-    },
-  ],
-  pagination: {
-    page: 1,
-    limit: 6,
-    total: 6,
-    totalPages: 1,
-  },
-};
-
-const mockAdminGenresResponse = {
-  success: true,
-  genres: [
-    { id: "g1", name: "Self-Help" },
-    { id: "g2", name: "Productivity" },
-    { id: "g3", name: "Programming" },
-    { id: "g4", name: "Business" },
-    { id: "g5", name: "Novel" },
-  ],
-};
+import { useAdminData } from "../../contexts/AdminDataContext";
 
 const emptyForm = {
   title: "",
@@ -136,48 +36,92 @@ const emptyForm = {
 
 
 export default function AdminBooks() {
-  const [books, setBooks] = useState(mockAdminBooksResponse.books);
+  const {
+    listBooks,
+    listGenres,
+    createBook,
+    updateBook,
+    deleteBook,
+  } = useAdminData();
+  const [books, setBooks] = useState([]);
+  const [genres, setGenres] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedGenreId, setSelectedGenreId] = useState("all");
-  const [currentPage, setCurrentPage] = useState(
-    mockAdminBooksResponse.pagination.page,
-  );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 6,
+    total: 0,
+    totalPages: 1,
+  });
+  const [refreshKey, setRefreshKey] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBookId, setEditingBookId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+    let isMounted = true;
 
-  const pageSize = mockAdminBooksResponse.pagination.limit;
+    const loadGenres = async () => {
+      try {
+        const response = await listGenres();
+        if (isMounted) {
+          setGenres(response?.genres ?? []);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err?.message || "Failed to load genres.");
+        }
+      }
+    };
 
-  const filteredBooks = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
+    loadGenres();
 
-    return books.filter((book) => {
-      const matchesSearch =
-        keyword.length === 0 ||
-        book.title.toLowerCase().includes(keyword) ||
-        book.author.toLowerCase().includes(keyword) ||
-        book.description.toLowerCase().includes(keyword);
+    return () => {
+      isMounted = false;
+    };
+  }, [listGenres]);
 
-      const matchesGenre =
-        selectedGenreId === "all" ||
-        book.genres.some((genre) => genre.id === selectedGenreId);
+  useEffect(() => {
+    let isMounted = true;
 
-      return matchesSearch && matchesGenre;
-    });
-  }, [books, search, selectedGenreId]);
+    const loadBooks = async () => {
+      setLoading(true);
+      setError(null);
 
-  const totalPages = Math.max(1, Math.ceil(filteredBooks.length / pageSize));
+      try {
+        const response = await listBooks({
+          page: currentPage,
+          limit: pagination.limit,
+          search: search.trim() || undefined,
+          genre_id: selectedGenreId === "all" ? undefined : selectedGenreId,
+        });
 
-  const paginatedBooks = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredBooks.slice(start, start + pageSize);
-  }, [filteredBooks, currentPage, pageSize]);
+        if (isMounted) {
+          setBooks(response?.books ?? []);
+          setPagination(response?.pagination ?? pagination);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err?.message || "Failed to load books.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadBooks();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentPage, listBooks, pagination.limit, refreshKey, search, selectedGenreId]);
+
+  const totalPages = Math.max(1, pagination.totalPages || 1);
 
   const goToPage = (page) => {
     if (page < 1 || page > totalPages) {
@@ -207,43 +151,46 @@ export default function AdminBooks() {
     setDialogOpen(true);
   };
 
-  const handleDeleteBook = (bookId) => {
-    setBooks((previous) => previous.filter((book) => book.id !== bookId));
+  const handleDeleteBook = async (bookId) => {
+    try {
+      await deleteBook(bookId);
+      setBooks((previous) => previous.filter((book) => book.id !== bookId));
+      setRefreshKey((prev) => prev + 1);
+    } catch (err) {
+      setError(err?.message || "Failed to delete book.");
+    }
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setError(null);
 
-    const parsedGenres = form.genresIds.map((genreId) => {
-      const genre = mockAdminGenresResponse.genres.find(
-        (item) => item.id === genreId,
-      );
-      return genre ?? { id: genreId, name: genreId };
-    });
-
-    const nextBook = {
-      id: editingBookId ?? `b-${Date.now()}`,
+    const payload = {
       title: form.title,
       author: form.author,
-      rating: Number(form.rating || 0),
+      rating: form.rating ? Number(form.rating) : undefined,
       price: Number(form.price || 0),
-      description: form.description,
-      cover_image_url:
-        form.cover_image_url ||
-        "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=900&q=80",
+      description: form.description || undefined,
+      cover_image_url: form.cover_image_url || undefined,
       pdf_url: form.pdf_url,
-      genres: parsedGenres,
+      genresIds: form.genresIds,
     };
 
-    if (editingBookId) {
-      setBooks((previous) =>
-        previous.map((book) => (book.id === editingBookId ? nextBook : book)),
-      );
-    } else {
-      setBooks((previous) => [nextBook, ...previous]);
-    }
+    try {
+      if (editingBookId) {
+        await updateBook(editingBookId, payload);
+      } else {
+        await createBook(payload);
+      }
 
-    setDialogOpen(false);
+      setDialogOpen(false);
+      setForm(emptyForm);
+      setEditingBookId(null);
+      setCurrentPage(1);
+      setRefreshKey((prev) => prev + 1);
+    } catch (err) {
+      setError(err?.message || "Failed to save book.");
+    }
   };
 
   const toggleGenreSelection = (genreId) => {
@@ -308,6 +255,14 @@ export default function AdminBooks() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="m-6 rounded-3xl border border-white/20 bg-neutral-950 p-6 text-white">
+        <p className="text-white/70">{error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="m-6 space-y-8">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -341,7 +296,7 @@ export default function AdminBooks() {
           >
             All Genres
           </Button>
-          {mockAdminGenresResponse.genres.map((genre) => (
+          {genres.map((genre) => (
             <Button
               key={genre.id}
               type="button"
@@ -373,7 +328,7 @@ export default function AdminBooks() {
           <span className="text-sm font-medium">Add Book</span>
         </button>
 
-        {paginatedBooks.map((book) => (
+        {books.map((book) => (
           <div key={book.id} className="group flex flex-col items-center gap-2">
             <div className="relative h-44 w-28 overflow-hidden rounded-lg border border-white/30 bg-zinc-900 transition-transform duration-200 group-hover:scale-[1.02]">
               <div className="absolute inset-0 bg-zinc-900/40" />
@@ -560,7 +515,7 @@ export default function AdminBooks() {
             <div className="space-y-1.5">
               <Label className="text-sm font-medium">Genres</Label>
               <div className="grid max-h-44 grid-cols-2 gap-2 overflow-auto rounded-lg border bg-background p-2">
-                {mockAdminGenresResponse.genres.map((genre) => {
+                {genres.map((genre) => {
                   const isSelected = form.genresIds.includes(genre.id);
 
                   return (
@@ -588,7 +543,7 @@ export default function AdminBooks() {
               </p>
               <div className="flex flex-wrap gap-2">
                 {form.genresIds.map((genreId) => {
-                  const genre = mockAdminGenresResponse.genres.find(
+                  const genre = genres.find(
                     (item) => item.id === genreId,
                   );
 

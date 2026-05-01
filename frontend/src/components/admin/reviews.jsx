@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import SearchBar from "../search-bar";
 import {
   Pagination,
@@ -9,48 +9,7 @@ import {
   PaginationPrevious,
 } from "../ui/pagination";
 import { Spinner } from "../ui/spinner";
-
-const mockAdminReviewsResponse = {
-  success: true,
-  reviews: [
-    {
-      id: "r1",
-      user: { id: "2741", username: "Anis" },
-      book: { id: "b1", title: "Atomic Habits" },
-      rating: 5,
-    },
-    {
-      id: "r2",
-      user: { id: "9857", username: "Abdelouahed" },
-      book: { id: "b2", title: "Clean Code" },
-      rating: 2,
-    },
-    {
-      id: "r3",
-      user: { id: "3874", username: "Abdellah" },
-      book: { id: "b3", title: "Deep Work" },
-      rating: 4,
-    },
-    {
-      id: "r4",
-      user: { id: "6426", username: "Mohammed" },
-      book: { id: "b4", title: "The Pragmatic Programmer" },
-      rating: 5,
-    },
-    {
-      id: "r5",
-      user: { id: "8375", username: "Amine" },
-      book: { id: "b5", title: "Rich Dad Poor Dad" },
-      rating: 3,
-    },
-  ],
-  pagination: {
-    page: 1,
-    limit: 8,
-    total: 5,
-    totalPages: 1,
-  },
-};
+import { useAdminData } from "../../contexts/AdminDataContext";
 
 const renderStars = (rating) => {
   const stars = Array.from({ length: 5 }, (_, index) => index + 1);
@@ -70,39 +29,55 @@ const renderStars = (rating) => {
 };
 
 export default function AdminReviews() {
-  const [reviews, setReviews] = useState(mockAdminReviewsResponse.reviews);
+  const { listReviews } = useAdminData();
+  const [reviews, setReviews] = useState([]);
   const [search, setSearch] = useState("");
-  const [currentPage, setCurrentPage] = useState(
-    mockAdminReviewsResponse.pagination.page,
-  );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 8,
+    total: 0,
+    totalPages: 1,
+  });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+    let isMounted = true;
 
-  const pageSize = mockAdminReviewsResponse.pagination.limit;
+    const loadReviews = async () => {
+      setLoading(true);
+      setError(null);
 
-  const filteredReviews = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
+      try {
+        const response = await listReviews({
+          page: currentPage,
+          limit: pagination.limit,
+          search: search.trim() || undefined,
+        });
+        if (isMounted) {
+          setReviews(response?.reviews ?? []);
+          setPagination(response?.pagination ?? pagination);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err?.message || "Failed to load reviews.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
 
-    return reviews.filter((review) => {
-      const matchesSearch =
-        keyword.length === 0 ||
-        review.user.username.toLowerCase().includes(keyword) ||
-        review.book.title.toLowerCase().includes(keyword);
+    loadReviews();
 
-      return matchesSearch;
-    });
-  }, [reviews, search]);
+    return () => {
+      isMounted = false;
+    };
+  }, [currentPage, listReviews, pagination.limit, search]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredReviews.length / pageSize));
-
-  const paginatedReviews = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredReviews.slice(start, start + pageSize);
-  }, [filteredReviews, currentPage, pageSize]);
+  const totalPages = Math.max(1, pagination.totalPages || 1);
 
   const goToPage = (page) => {
     if (page < 1 || page > totalPages) {
@@ -161,6 +136,14 @@ export default function AdminReviews() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="m-6 rounded-3xl border border-white/20 bg-neutral-950 p-6 text-white">
+        <p className="text-white/70">{error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="m-6 space-y-8">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -192,7 +175,7 @@ export default function AdminReviews() {
         </div>
 
         <div className="divide-y divide-white/10">
-          {paginatedReviews.map((review, index) => (
+          {reviews.map((review, index) => (
             <div
               key={review.id}
               className={`grid grid-cols-[140px_1fr_1.5fr_120px] items-center px-6 py-4 text-sm ${

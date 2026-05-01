@@ -18,79 +18,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-
-const mockAnalyticsByType = {
-  daily: {
-    success: true,
-    data: {
-      sales: [
-        { date: "Mon", totalAmount: 1200 },
-        { date: "Tue", totalAmount: 2600 },
-        { date: "Wed", totalAmount: 2100 },
-        { date: "Thu", totalAmount: 3300 },
-        { date: "Fri", totalAmount: 2800 },
-      ],
-      topSellingGenres: [
-        { genre: { id: "g1", name: "Stories" }, sales: 5400 },
-        { genre: { id: "g2", name: "Culture" }, sales: 4200 },
-        { genre: { id: "g3", name: "Systems" }, sales: 3100 },
-        { genre: { id: "g4", name: "Academy" }, sales: 2800 },
-        { genre: { id: "g5", name: "Wellness" }, sales: 1900 },
-      ],
-      topSellingBooks: [
-        { book: { id: "b1", title: "Atomic Habits" }, sales: 4200 },
-        { book: { id: "b2", title: "Clean Code" }, sales: 3500 },
-        { book: { id: "b3", title: "Deep Work" }, sales: 2800 },
-      ],
-      ordersCount: 32,
-    },
-  },
-  weekly: {
-    success: true,
-    data: {
-      sales: [
-        { date: "W1", totalAmount: 14200 },
-        { date: "W2", totalAmount: 16500 },
-        { date: "W3", totalAmount: 12800 },
-        { date: "W4", totalAmount: 19000 },
-      ],
-      topSellingGenres: [
-        { genre: { id: "g1", name: "Stories" }, sales: 15400 },
-        { genre: { id: "g4", name: "Academy" }, sales: 13200 },
-        { genre: { id: "g2", name: "Culture" }, sales: 11800 },
-        { genre: { id: "g5", name: "Wellness" }, sales: 8800 },
-      ],
-      topSellingBooks: [
-        { book: { id: "b4", title: "The Pragmatic Programmer" }, sales: 8200 },
-        { book: { id: "b5", title: "The Alchemist" }, sales: 7600 },
-      ],
-      ordersCount: 128,
-    },
-  },
-  monthly: {
-    success: true,
-    data: {
-      sales: [
-        { date: "Jan", totalAmount: 52000 },
-        { date: "Feb", totalAmount: 61000 },
-        { date: "Mar", totalAmount: 48000 },
-        { date: "Apr", totalAmount: 69000 },
-      ],
-      topSellingGenres: [
-        { genre: { id: "g3", name: "Systems" }, sales: 32400 },
-        { genre: { id: "g1", name: "Stories" }, sales: 29800 },
-        { genre: { id: "g2", name: "Culture" }, sales: 25500 },
-        { genre: { id: "g5", name: "Wellness" }, sales: 21400 },
-      ],
-      topSellingBooks: [
-        { book: { id: "b2", title: "Clean Code" }, sales: 14200 },
-        { book: { id: "b6", title: "Rich Dad Poor Dad" }, sales: 11800 },
-        { book: { id: "b3", title: "Deep Work" }, sales: 9700 },
-      ],
-      ordersCount: 512,
-    },
-  },
-};
+import { useAdminData } from "../../contexts/AdminDataContext";
 
 const genreColors = ["#60a5fa", "#f59e0b", "#34d399", "#a78bfa", "#f472b6"];
 
@@ -109,17 +37,46 @@ const ordersConfig = {
 };
 
 export default function AdminAnalytics() {
+  const { getAnalytics } = useAdminData();
   const [activeType, setActiveType] = useState("daily");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [data, setData] = useState(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+    let isMounted = true;
 
-  const analytics = mockAnalyticsByType[activeType];
-  const { sales, topSellingGenres, topSellingBooks, ordersCount } =
-    analytics.data;
+    const loadAnalytics = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await getAnalytics(activeType);
+        if (isMounted) {
+          setData(response?.data ?? null);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err?.message || "Failed to load analytics.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadAnalytics();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeType, getAnalytics]);
+
+  const sales = data?.sales ?? [];
+  const topSellingGenres = data?.topSellingGenres ?? [];
+  const topSellingBooks = data?.topSellingBooks ?? [];
+  const ordersCount = data?.ordersCount ?? 0;
 
   const ordersSeries = useMemo(() => {
     return sales.map((item) => ({
@@ -132,6 +89,14 @@ export default function AdminAnalytics() {
     return (
       <div className="m-6 flex min-h-[60vh] items-center justify-center">
         <Spinner className="size-8" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="m-6 rounded-3xl border border-white/20 bg-neutral-950 p-6 text-white">
+        <p className="text-white/70">{error}</p>
       </div>
     );
   }

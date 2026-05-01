@@ -15,91 +15,7 @@ import {
   ChartLegendContent,
 } from "../ui/chart";
 import { Spinner } from "../ui/spinner";
-
-const mockDashboardResponse = {
-  success: true,
-  data: {
-    booksNum: 150,
-    usersNum: 48,
-    totalMoneyAmount: 7850,
-    topSellingBooks: [
-      { id: "b1", title: "The Metamorphosis", author: "Franz Kafka" },
-      { id: "b2", title: "White Nights", author: "Fyodor Dostoevsky" },
-      { id: "b3", title: "The Stranger", author: "Albert Camus" },
-      { id: "b4", title: "1984", author: "George Orwell" },
-      {
-        id: "b5",
-        title: "The Brothers Karamazov",
-        author: "Fyodor Dostoevsky",
-      },
-    ],
-    latestOrders: [
-      {
-        id: "182",
-        book: { id: "b1", title: "Atomic Habits" },
-        user: { id: "u1", username: "amine" },
-        purchased_at: "2026-04-26T10:14:00.000Z",
-        amount: 2200,
-        status: "finished",
-      },
-      {
-        id: "181",
-        book: { id: "b2", title: "Clean Code" },
-        user: { id: "u2", username: "lina" },
-        purchased_at: "2026-04-26T09:42:00.000Z",
-        amount: 2800,
-        status: "pending",
-      },
-      {
-        id: "180",
-        book: { id: "b4", title: "Deep Work" },
-        user: { id: "u3", username: "sara" },
-        purchased_at: "2026-04-25T18:20:00.000Z",
-        amount: 1900,
-        status: "cancelled",
-      },
-      {
-        id: "179",
-        book: { id: "b5", title: "Refactoring" },
-        user: { id: "u4", username: "nadir" },
-        purchased_at: "2026-04-25T17:03:00.000Z",
-        amount: 3100,
-        status: "finished",
-      },
-    ],
-    recentReviews: [
-      {
-        id: "r1",
-        user: { id: "u2", username: "lina" },
-        rating: 5,
-        content: "Very useful and practical.",
-      },
-      {
-        id: "r2",
-        user: { id: "u1", username: "amine" },
-        rating: 4,
-        content: "Great content, smooth reading.",
-      },
-      {
-        id: "r3",
-        user: { id: "u3", username: "sara" },
-        rating: 5,
-        content: "Loved it, would recommend.",
-      },
-      {
-        id: "r4",
-        user: { id: "u4", username: "nadir" },
-        rating: 3,
-        content: "Good but expected more examples.",
-      },
-    ],
-    numbersOfUsersPerMonth: [
-      { month: "Jan", count: 8 },
-      { month: "Feb", count: 12 },
-      { month: "Mar", count: 18 },
-    ],
-  },
-};
+import { useAdminData } from "../../contexts/AdminDataContext";
 
 const chartConfig = {
   count: {
@@ -115,13 +31,40 @@ const statusStyles = {
 };
 
 export default function AdminDashboard() {
-  const { data } = mockDashboardResponse;
+  const { getDashboard } = useAdminData();
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+    let isMounted = true;
+
+    const loadDashboard = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await getDashboard();
+        if (isMounted) {
+          setData(response?.data ?? null);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err?.message || "Failed to load dashboard.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadDashboard();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [getDashboard]);
 
   if (loading) {
     return (
@@ -129,6 +72,18 @@ export default function AdminDashboard() {
         <Spinner className="size-8" />
       </div>
     );
+  }
+
+  if (error) {
+    return (
+      <div className="m-6 rounded-3xl border border-white/20 bg-neutral-950 p-6 text-white">
+        <p className="text-white/70">{error}</p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return null;
   }
 
   return (
@@ -172,8 +127,9 @@ export default function AdminDashboard() {
           <h3 className="text-lg font-semibold text-white">Latest Orders</h3>
           <div className="mt-4 space-y-2 text-sm text-white/80">
             {data.latestOrders.map((order) => {
+              const status = order.status ?? "finished";
               const statusClass =
-                statusStyles[order.status] ?? "border-white/30 text-white/60";
+                statusStyles[status] ?? "border-white/30 text-white/60";
 
               return (
                 <div
@@ -192,7 +148,7 @@ export default function AdminDashboard() {
                     <span
                       className={`inline-flex items-center rounded-full border px-2 py-1 text-xs capitalize ${statusClass}`}
                     >
-                      {order.status}
+                      {status}
                     </span>
                     <span className="text-xs text-white/50">
                       {order.amount}DA

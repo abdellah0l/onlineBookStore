@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import SearchBar from "../search-bar";
 import {
   Pagination,
@@ -9,53 +9,7 @@ import {
   PaginationPrevious,
 } from "../ui/pagination";
 import { Spinner } from "../ui/spinner";
-
-const mockAdminOrdersResponse = {
-  success: true,
-  orders: [
-    {
-      id: "2741",
-      user: { id: "u1", username: "Anis" },
-      book: { id: "b1", title: "Atomic Habits" },
-      amount: 1200,
-      status: "finished",
-    },
-    {
-      id: "9857",
-      user: { id: "u2", username: "Abdelouahed" },
-      book: { id: "b2", title: "The Metamorphosis" },
-      amount: 4500,
-      status: "cancelled",
-    },
-    {
-      id: "3874",
-      user: { id: "u3", username: "Abdellah" },
-      book: { id: "b3", title: "Deep Work" },
-      amount: 2200,
-      status: "finished",
-    },
-    {
-      id: "6426",
-      user: { id: "u4", username: "Mohammed" },
-      book: { id: "b4", title: "Clean Code" },
-      amount: 500,
-      status: "finished",
-    },
-    {
-      id: "8375",
-      user: { id: "u5", username: "Amine" },
-      book: { id: "b5", title: "Rich Dad Poor Dad" },
-      amount: 900,
-      status: "finished",
-    },
-  ],
-  pagination: {
-    page: 1,
-    limit: 8,
-    total: 5,
-    totalPages: 1,
-  },
-};
+import { useAdminData } from "../../contexts/AdminDataContext";
 
 const formatAmount = (amount) => `${amount}DA`;
 
@@ -65,40 +19,55 @@ const statusStyles = {
 };
 
 export default function AdminOrders() {
-  const [orders] = useState(mockAdminOrdersResponse.orders);
+  const { listOrders } = useAdminData();
+  const [orders, setOrders] = useState([]);
   const [search, setSearch] = useState("");
-  const [currentPage, setCurrentPage] = useState(
-    mockAdminOrdersResponse.pagination.page,
-  );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 8,
+    total: 0,
+    totalPages: 1,
+  });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+    let isMounted = true;
 
-  const pageSize = mockAdminOrdersResponse.pagination.limit;
+    const loadOrders = async () => {
+      setLoading(true);
+      setError(null);
 
-  const filteredOrders = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
+      try {
+        const response = await listOrders({
+          page: currentPage,
+          limit: pagination.limit,
+          search: search.trim() || undefined,
+        });
+        if (isMounted) {
+          setOrders(response?.orders ?? []);
+          setPagination(response?.pagination ?? pagination);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err?.message || "Failed to load orders.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
 
-    return orders.filter((order) => {
-      const matchesSearch =
-        keyword.length === 0 ||
-        order.user.username.toLowerCase().includes(keyword) ||
-        order.book.title.toLowerCase().includes(keyword) ||
-        order.status.toLowerCase().includes(keyword);
+    loadOrders();
 
-      return matchesSearch;
-    });
-  }, [orders, search]);
+    return () => {
+      isMounted = false;
+    };
+  }, [currentPage, listOrders, pagination.limit, search]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
-
-  const paginatedOrders = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredOrders.slice(start, start + pageSize);
-  }, [filteredOrders, currentPage, pageSize]);
+  const totalPages = Math.max(1, pagination.totalPages || 1);
 
   const goToPage = (page) => {
     if (page < 1 || page > totalPages) {
@@ -157,6 +126,14 @@ export default function AdminOrders() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="m-6 rounded-3xl border border-white/20 bg-neutral-950 p-6 text-white">
+        <p className="text-white/70">{error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="m-6 space-y-8">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -189,7 +166,7 @@ export default function AdminOrders() {
         </div>
 
         <div className="divide-y divide-white/10">
-          {paginatedOrders.map((order, index) => {
+          {orders.map((order, index) => {
             const statusClass =
               statusStyles[order.status] ?? "border-white/30 text-white/60";
 

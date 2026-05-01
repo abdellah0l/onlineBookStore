@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import SearchBar from "../search-bar";
 import { Button } from "../ui/button";
 import {
@@ -10,38 +10,7 @@ import {
     PaginationPrevious,
 } from "../ui/pagination";
 import { Spinner } from "../ui/spinner";
-
-const mockAdminUsersResponse = {
-    success: true,
-    users: [
-        { id: "2741", username: "Anis", email: "anis@mail.com", status: "activated" },
-        {
-            id: "9857",
-            username: "Abdelouahed",
-            email: "abdel@mail.com",
-            status: "activated",
-        },
-        {
-            id: "3874",
-            username: "Abdellah",
-            email: "abdellah@mail.com",
-            status: "disactivated",
-        },
-        {
-            id: "6426",
-            username: "Mohammed",
-            email: "mohammed@mail.com",
-            status: "activated",
-        },
-        { id: "8375", username: "Amine", email: "amine@mail.com", status: "activated" },
-    ],
-    pagination: {
-        page: 1,
-        limit: 8,
-        total: 5,
-        totalPages: 1,
-    },
-};
+import { useAdminData } from "../../contexts/AdminDataContext";
 
 const statusStyles = {
     activated: "border-emerald-400/70 text-emerald-300",
@@ -49,39 +18,55 @@ const statusStyles = {
 };
 
 export default function AdminCustomers() {
-    const [users, setUsers] = useState(mockAdminUsersResponse.users);
+    const { listUsers, updateUserStatus } = useAdminData();
+    const [users, setUsers] = useState([]);
     const [search, setSearch] = useState("");
-    const [currentPage, setCurrentPage] = useState(
-        mockAdminUsersResponse.pagination.page,
-    );
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 8,
+        total: 0,
+        totalPages: 1,
+    });
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        const timer = setTimeout(() => setLoading(false), 500);
-        return () => clearTimeout(timer);
-    }, []);
+        let isMounted = true;
 
-    const pageSize = mockAdminUsersResponse.pagination.limit;
+        const loadUsers = async () => {
+            setLoading(true);
+            setError(null);
 
-    const filteredUsers = useMemo(() => {
-        const keyword = search.trim().toLowerCase();
+            try {
+                const response = await listUsers({
+                    page: currentPage,
+                    limit: pagination.limit,
+                    search: search.trim() || undefined,
+                });
+                if (isMounted) {
+                    setUsers(response?.users ?? []);
+                    setPagination(response?.pagination ?? pagination);
+                }
+            } catch (err) {
+                if (isMounted) {
+                    setError(err?.message || "Failed to load users.");
+                }
+            } finally {
+                if (isMounted) {
+                    setLoading(false);
+                }
+            }
+        };
 
-        return users.filter((user) => {
-            const matchesSearch =
-                keyword.length === 0 ||
-                user.username.toLowerCase().includes(keyword) ||
-                user.email.toLowerCase().includes(keyword);
+        loadUsers();
 
-            return matchesSearch;
-        });
-    }, [users, search]);
+        return () => {
+            isMounted = false;
+        };
+    }, [currentPage, listUsers, pagination.limit, search]);
 
-    const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
-
-    const paginatedUsers = useMemo(() => {
-        const start = (currentPage - 1) * pageSize;
-        return filteredUsers.slice(start, start + pageSize);
-    }, [filteredUsers, currentPage, pageSize]);
+    const totalPages = Math.max(1, pagination.totalPages || 1);
 
     const goToPage = (page) => {
         if (page < 1 || page > totalPages) {
@@ -90,17 +75,25 @@ export default function AdminCustomers() {
         setCurrentPage(page);
     };
 
-    const handleToggleStatus = (userId) => {
-        setUsers((previous) =>
-            previous.map((user) =>
-                user.id === userId
-                    ? {
-                            ...user,
-                            status: user.status === "activated" ? "disactivated" : "activated",
-                        }
-                    : user,
-            ),
-        );
+    const handleToggleStatus = async (userId) => {
+        const currentUser = users.find((user) => user.id === userId);
+        if (!currentUser) {
+            return;
+        }
+
+        const nextStatus =
+            currentUser.status === "activated" ? "disactivated" : "activated";
+
+        try {
+            await updateUserStatus(userId, nextStatus);
+            setUsers((previous) =>
+                previous.map((user) =>
+                    user.id === userId ? { ...user, status: nextStatus } : user,
+                ),
+            );
+        } catch (err) {
+            setError(err?.message || "Failed to update user status.");
+        }
     };
 
     const paginationSection = (
@@ -153,6 +146,14 @@ export default function AdminCustomers() {
         );
     }
 
+    if (error) {
+        return (
+            <div className="m-6 rounded-3xl border border-white/20 bg-neutral-950 p-6 text-white">
+                <p className="text-white/70">{error}</p>
+            </div>
+        );
+    }
+
     return (
         <div className="m-6 space-y-8">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -185,7 +186,7 @@ export default function AdminCustomers() {
                 </div>
 
                 <div className="divide-y divide-white/10">
-                    {paginatedUsers.map((user, index) => {
+                    {users.map((user, index) => {
                         const statusClass =
                             statusStyles[user.status] ?? "border-white/30 text-white/60";
 

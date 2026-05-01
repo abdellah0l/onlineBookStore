@@ -12,17 +12,7 @@ import {
 } from "../ui/dialog";
 import { Label } from "../ui/label";
 import { Spinner } from "../ui/spinner";
-
-const mockAdminGenresResponse = {
-    success: true,
-    genres: [
-        { id: "g1", name: "Stories" },
-        { id: "g2", name: "Culture" },
-        { id: "g3", name: "Systems" },
-        { id: "g4", name: "Academy" },
-        { id: "g5", name: "Wellness" },
-    ],
-};
+import { useAdminData } from "../../contexts/AdminDataContext";
 
 const emptyForm = {
     name: "",
@@ -37,16 +27,43 @@ const genreTileStyles = [
 ];
 
 export default function AdminGenres() {
+    const { listGenres, createGenre, updateGenre, deleteGenre } = useAdminData();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingGenreId, setEditingGenreId] = useState(null);
     const [form, setForm] = useState(emptyForm);
-    const [genres, setGenres] = useState(mockAdminGenresResponse.genres);
+    const [genres, setGenres] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        const timer = setTimeout(() => setLoading(false), 500);
-        return () => clearTimeout(timer);
-    }, []);
+        let isMounted = true;
+
+        const loadGenres = async () => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const response = await listGenres();
+                if (isMounted) {
+                    setGenres(response?.genres ?? []);
+                }
+            } catch (err) {
+                if (isMounted) {
+                    setError(err?.message || "Failed to load genres.");
+                }
+            } finally {
+                if (isMounted) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        loadGenres();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [listGenres]);
 
     const openAddDialog = () => {
         setEditingGenreId(null);
@@ -60,27 +77,34 @@ export default function AdminGenres() {
         setDialogOpen(true);
     };
 
-    const handleDelete = (genreId) => {
-        setGenres((previous) => previous.filter((genre) => genre.id !== genreId));
+    const handleDelete = async (genreId) => {
+        try {
+            await deleteGenre(genreId);
+            setGenres((previous) => previous.filter((genre) => genre.id !== genreId));
+        } catch (err) {
+            setError(err?.message || "Failed to delete genre.");
+        }
     };
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
+        setError(null);
 
-        if (editingGenreId) {
-            setGenres((previous) =>
-                previous.map((genre) =>
-                    genre.id === editingGenreId ? { ...genre, name: form.name } : genre,
-                ),
-            );
-        } else {
-            setGenres((previous) => [
-                ...previous,
-                { id: `g${previous.length + 1}`, name: form.name },
-            ]);
+        try {
+            if (editingGenreId) {
+                await updateGenre(editingGenreId, { name: form.name });
+            } else {
+                await createGenre({ name: form.name });
+            }
+
+            const response = await listGenres();
+            setGenres(response?.genres ?? []);
+            setDialogOpen(false);
+            setForm(emptyForm);
+            setEditingGenreId(null);
+        } catch (err) {
+            setError(err?.message || "Failed to save genre.");
         }
-
-        setDialogOpen(false);
     };
 
     const genreTiles = useMemo(() => genres, [genres]);
@@ -89,6 +113,14 @@ export default function AdminGenres() {
         return (
             <div className="m-6 flex min-h-[60vh] items-center justify-center">
                 <Spinner className="size-8" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="m-6 rounded-3xl border border-white/20 bg-neutral-950 p-6 text-white">
+                <p className="text-white/70">{error}</p>
             </div>
         );
     }
