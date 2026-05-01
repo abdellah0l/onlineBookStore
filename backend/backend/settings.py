@@ -47,7 +47,7 @@ DATABASES = {
     "default": dj_database_url.parse(
         os.environ.get(
             "DATABASE_URL",
-            "postgresql://postgres:project123@localhost:5432/OnlineBookStore",
+            "postgresql://postgres:project123@localhost:5432/onlineBookStore",
         ),
         conn_max_age=600,
     )
@@ -61,6 +61,7 @@ USE_TZ = True
 STATIC_URL = "/static/"
 
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 # EMAIL_BACKEND = "django.core.mail.backends.con.EmailBackend"
 # EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")

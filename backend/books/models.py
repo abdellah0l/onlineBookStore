@@ -1,75 +1,148 @@
 from django.db import models
+from django.utils import timezone
+import uuid
 
 
 class User(models.Model):
-    name = models.CharField(max_length=50)
+    ROLE_CHOICES = [
+        ('admin', 'Admin'),
+        ('user', 'User'),
+    ]
+    STATUS_CHOICES = [
+        ('activated', 'Activated'),
+        ('disactivated', 'Disactivated'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    username = models.CharField(max_length=50, unique=True)
     email = models.EmailField(unique=True)
-    password = models.CharField(max_length=250)
-    isConfirmed = models.BooleanField(default=False)
-    confirmationCode = models.CharField(max_length=6, unique=True, null=True, blank=True)
+    password_hash = models.CharField(max_length=255)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='activated')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "users"
 
     def to_dict(self):
         return {
-            "id": self.id,
-            "name": self.name,
+            "id": str(self.id),
+            "username": self.username,
             "email": self.email,
-            "isConfirmed": int(self.isConfirmed),
-            "confirmationCode": self.confirmationCode,
+            "role": self.role,
+            "status": self.status,
         }
 
-    @staticmethod
-    def validate_user_data(user_data):
-        if not isinstance(user_data, dict):
-            return False
-        if "name" in user_data and "email" in user_data and "password" in user_data:
-            return all(str(user_data[key]).strip() for key in ["name", "email", "password"])
-        return False
+
+class Genre(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "genres"
+
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "name": self.name,
+        }
 
 
 class Book(models.Model):
-    title = models.CharField(max_length=200)
-    author = models.CharField(max_length=100)
-    category = models.CharField(max_length=50)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255)
+    author = models.CharField(max_length=255)
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField(blank=True, null=True)
-    total_copies = models.IntegerField(default=1)
-    available_copies = models.IntegerField(default=1)
-    image_url = models.CharField(max_length=255, blank=True, null=True)
+    cover_image_url = models.TextField(blank=True, null=True)
+    pdf_url = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    genres = models.ManyToManyField(Genre, through='BookGenre', related_name='books')
 
     class Meta:
         db_table = "books"
 
     def to_dict(self):
         return {
-            "id": self.id,
+            "id": str(self.id),
             "title": self.title,
             "author": self.author,
-            "category": self.category,
+            "rating": float(self.rating),
+            "price": float(self.price),
             "description": self.description,
-            "total_copies": self.total_copies,
-            "available_copies": self.available_copies,
-            "image_url": self.image_url,
+            "cover_image_url": self.cover_image_url,
+            "genres": [genre.to_dict() for genre in self.genres.all()],
         }
 
 
-class BorrowedBook(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="borrowed_books")
-    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="borrowed_books")
-    borrowed_at = models.DateTimeField(auto_now_add=True)
-    return_date = models.DateTimeField(blank=True, null=True)
-    status = models.CharField(max_length=20, default="borrowed")
+class BookGenre(models.Model):
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
 
     class Meta:
-        db_table = "borrowed_books"
+        db_table = "book_genres"
+        unique_together = ('book', 'genre')
+
+
+class Order(models.Model):
+    STATUS_CHOICES = [
+        ('finished', 'Finished'),
+        ('pending', 'Pending'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='orders')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    purchased_at = models.DateTimeField(blank=True, null=True)
+    chargily_payment_id = models.CharField(max_length=255, unique=True, blank=True, null=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "orders"
+        unique_together = ('user', 'book')
 
     def to_dict(self):
         return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "book_id": self.book_id,
-            "borrowed_at": self.borrowed_at.isoformat(),
-            "return_date": self.return_date.isoformat() if self.return_date else None,
+            "id": str(self.id),
+            "book": {
+                "id": str(self.book.id),
+                "title": self.book.title,
+                "cover_image_url": self.book.cover_image_url,
+            },
+            "purchased_at": self.purchased_at.isoformat() if self.purchased_at else None,
+            "amount": float(self.amount),
             "status": self.status,
+        }
+
+
+class Review(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews')
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='reviews')
+    content = models.TextField(blank=True, null=True)
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "reviews"
+        unique_together = ('user', 'book')
+
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "user": {
+                "id": str(self.user.id),
+                "username": self.user.username,
+            },
+            "rating": float(self.rating),
+            "content": self.content,
         }
