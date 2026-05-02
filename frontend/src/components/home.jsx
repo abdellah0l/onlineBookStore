@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Navigation from "./navigation";
 import { Spinner } from "./ui/spinner";
+import { useData } from "../contexts/DataContext";
 import {
 	Carousel,
 	CarouselContent,
@@ -9,70 +10,42 @@ import {
 	CarouselPrevious,
 } from "./ui/carousel";
 
-const mockRecentBooksResponse = {
-	success: true,
-	books: [
-		{
-			id: "b1",
-			title: "Book 1",
-			description:
-				"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis ac nulla et lorem tempor mattis.",
-			cover_image_url:
-				"https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=80",
-		},
-		{
-			id: "b2",
-			title: "Book 2",
-			description:
-				"Maecenas eu lacus et sapien gravida auctor. Sed ut orci in nunc tincidunt aliquet.",
-			cover_image_url:
-				"https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1200&q=80",
-		},
-		{
-			id: "b3",
-			title: "Book 3",
-			description:
-				"Integer posuere nisi at elit cursus, id vehicula justo pretium. Cras ut massa velit.",
-			cover_image_url:
-				"https://images.unsplash.com/photo-1528207776546-365bb710ee93?auto=format&fit=crop&w=1200&q=80",
-		},
-		{
-			id: "b4",
-			title: "Book 4",
-			description:
-				"Pellentesque habitant morbi tristique senectus et netus et malesuada fames.",
-			cover_image_url:
-				"https://images.unsplash.com/photo-1455885666463-2c01dc35fbf7?auto=format&fit=crop&w=1200&q=80",
-		},
-		{
-			id: "b5",
-			title: "Book 5",
-			description:
-				"Quisque at nibh in lorem faucibus fermentum. Suspendisse potenti in semper.",
-			cover_image_url:
-				"https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200&q=80",
-		},
-		{
-			id: "b6",
-			title: "Book 6",
-			description:
-				"Praesent tincidunt mi vel lectus pretium, nec fringilla neque gravida.",
-			cover_image_url:
-				"https://images.unsplash.com/photo-1523475472560-d2df97ec485c?auto=format&fit=crop&w=1200&q=80",
-		},
-	],
-};
-
 export default function Home() {
-	const { books } = mockRecentBooksResponse;
+	const { getRecentBooks } = useData();
+	const [books, setBooks] = useState([]);
+	const [error, setError] = useState(null);
 	const [carouselApi, setCarouselApi] = useState(null);
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		const timer = setTimeout(() => setLoading(false), 500);
-		return () => clearTimeout(timer);
-	}, []);
+		let active = true;
+
+		const loadBooks = async () => {
+			try {
+				setLoading(true);
+				setError(null);
+				const data = await getRecentBooks();
+				if (active) {
+					setBooks(data.books || []);
+				}
+			} catch (err) {
+				if (active) {
+					setError(err.message || "Failed to load recent books");
+				}
+			} finally {
+				if (active) {
+					setLoading(false);
+				}
+			}
+		};
+
+		loadBooks();
+
+		return () => {
+			active = false;
+		};
+	}, [getRecentBooks]);
 
 	useEffect(() => {
 		if (!carouselApi) {
@@ -91,7 +64,7 @@ export default function Home() {
 		};
 	}, [carouselApi]);
 
-	const featuredBooks = useMemo(() => books.slice(0, 6), [books]);
+	const featuredBooks = books.slice(0, 6);
 	const selectedBook = books[selectedIndex] ?? books[0];
 
 	return (
@@ -103,6 +76,10 @@ export default function Home() {
 					{loading ? (
 						<div className="flex min-h-[360px] items-center justify-center">
 							<Spinner className="size-8" />
+						</div>
+					) : error ? (
+						<div className="flex min-h-[360px] items-center justify-center text-sm text-rose-300">
+							{error}
 						</div>
 					) : (
 						<div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">

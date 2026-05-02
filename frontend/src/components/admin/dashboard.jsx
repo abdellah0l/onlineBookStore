@@ -45,6 +45,7 @@ export default function AdminDashboard() {
 
       try {
         const response = await getDashboard();
+        console.log("Dashboard data:", response.data);
         if (isMounted) {
           setData(response?.data ?? null);
         }

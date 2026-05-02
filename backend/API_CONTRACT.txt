@@ -42,7 +42,7 @@ ALL ROLES (authenticated users + admin):
    - response: {
         success: bool,
         book: {
-          id, title, genres: [{ id, name }, ...], author, rating, price, description,
+          id, title, genres: [{ id, name }, ...], cover_image_url, author, rating, price, description,
         }
    }
    - Note: NEVER returns pdf_url

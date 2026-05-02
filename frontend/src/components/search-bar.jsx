@@ -1,6 +1,5 @@
 
-
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -19,12 +18,12 @@ export default function SearchBar({
   // Debounce search to avoid too many API calls
   const debouncedQuery = useDebounce(query, 300)
 
-  const handleSearch = useCallback((searchQuery) => {
+  const handleSearch = (searchQuery) => {
     setIsSearching(true)
     onSearch(searchQuery.trim())
     // Reset searching state after a short delay
     setTimeout(() => setIsSearching(false), 1000)
-  }, [onSearch])
+  }
 
   const handleClear = () => {
     setQuery("")

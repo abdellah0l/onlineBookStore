@@ -1,5 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useState, useEffect, createContext, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 // creatin a context for the auth endpionts and the user state to wrap the app with it
 // and use it in the components to access the user state
@@ -11,6 +13,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -26,6 +29,7 @@ export const AuthProvider = ({ children }) => {
         );
         if (response.ok) {
           const data = await response.json();
+          console.log("Authenticated user:", data);
           setUser(data.user);
         } else {
           setUser(null);
@@ -61,6 +65,8 @@ export const AuthProvider = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
+        toast.success(data.message || "Signed up successfully!");
+        navigate("/");
       } else {
         const errorData = await response.json();
         setError(errorData.error);
@@ -94,10 +100,13 @@ export const AuthProvider = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
+        toast.success(data.message || "Signed in successfully!");
+        navigate("/"); 
       } else {
         const errorData = await response.json();
         console.error("Sign-in error:", errorData);
-        setError(errorData.error);
+        setError(errorData.message);
+        toast.error(errorData.message || "Failed to sign in");
       }
     } catch (err) {
       setError(err);
@@ -120,9 +129,15 @@ export const AuthProvider = ({ children }) => {
       );
       if (response.ok) {
         setUser(null);
+        toast.success("Logged out successfully!");
+        navigate("/signin");
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || errorData.error || "Logout failed");
       }
     } catch (err) {
       setError(err);
+      toast.error(err.message || "Logout failed");
     } finally {
       setLoading(false);
     }

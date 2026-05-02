@@ -1,54 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Navigation from "./navigation";
 import { Spinner } from "./ui/spinner";
-
-const mockProfileResponse = {
-	success: true,
-	profile: {
-		id: "u1",
-		username: "Amine",
-		email: "amine@mail.com",
-	},
-	orders: [
-		{
-			id: "o1",
-			book: {
-				id: "b1",
-				title: "Atomic Habits",
-				cover_image_url:
-					"https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80",
-			},
-			purchased_at: "2026-04-28T12:10:00.000Z",
-			amount: 2200,
-			status: "finished",
-		},
-		{
-			id: "o2",
-			book: {
-				id: "b2",
-				title: "Deep Work",
-				cover_image_url:
-					"https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=600&q=80",
-			},
-			purchased_at: "2026-04-26T08:30:00.000Z",
-			amount: 0,
-			status: "pending",
-		},
-		{
-			id: "o3",
-			book: {
-				id: "b3",
-				title: "Clean Code",
-				cover_image_url:
-					"https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=600&q=80",
-			},
-			purchased_at: "2026-04-20T15:50:00.000Z",
-			amount: 2800,
-			status: "finished",
-		},
-	],
-};
+import { useData } from "../contexts/DataContext";
 
 const statusStyles = {
 	finished: "border-emerald-400/70 text-emerald-300",
@@ -57,23 +11,49 @@ const statusStyles = {
 };
 
 export default function Profile() {
-	const { profile, orders } = mockProfileResponse;
+	const { getMe } = useData();
+	const [profile, setProfile] = useState(null);
+	const [orders, setOrders] = useState([]);
+	const [error, setError] = useState(null);
 	const wishlistOrders = orders.filter((order) => order.status === "pending");
 	const purchasedOrders = orders.filter((order) => order.status === "finished");
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		const timer = setTimeout(() => setLoading(false), 500);
-		return () => clearTimeout(timer);
+		let active = true;
+
+		const loadProfile = async () => {
+			try {
+				setLoading(true);
+				setError(null);
+				const data = await getMe();
+				if (active) {
+					setProfile(data.profile || null);
+					setOrders(data.orders || []);
+				}
+			} catch (err) {
+				if (active) {
+					setError(err.message || "Failed to load profile");
+				}
+			} finally {
+				if (active) {
+					setLoading(false);
+				}
+			}
+		};
+
+		loadProfile();
+
+		return () => {
+			active = false;
+		};
 	}, []);
 
-	const totals = useMemo(() => {
-		return {
-			orders: orders.length,
-			wishlist: wishlistOrders.length,
-			spent: purchasedOrders.reduce((sum, order) => sum + order.amount, 0),
-		};
-	}, [orders, purchasedOrders, wishlistOrders]);
+	const totals = {
+		orders: orders.length,
+		wishlist: wishlistOrders.length,
+		spent: purchasedOrders.reduce((sum, order) => sum + order.amount, 0),
+	};
 
 	return (
 		<div className="min-h-screen bg-neutral-950 text-white">
@@ -84,6 +64,10 @@ export default function Profile() {
 					{loading ? (
 						<div className="flex min-h-[320px] items-center justify-center">
 							<Spinner className="size-8" />
+						</div>
+					) : error ? (
+						<div className="flex min-h-[320px] items-center justify-center text-sm text-rose-300">
+							{error}
 						</div>
 					) : (
 						<div>
