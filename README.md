@@ -1,9 +1,9 @@
-# ONLINEBOOKSTORE
+# READEX
 
 ## Project structure
 
 ```text
-ONLINEBOOKSTORE/
+READEX/
 ├── backend/
 │   ├── backend/
 │   ├── books/

@@ -6,6 +6,7 @@ import {
   Users,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import profilePhoto from "../../assets/photo_2026-05-04_02-11-40.jpg";
 import {
   Sidebar,
   SidebarContent,
@@ -67,11 +68,11 @@ export default function AppSidebar() {
   const location = useLocation();
 
   return (
-    <Sidebar variant="inset" className="bg-amber-950">
+    <Sidebar variant="inset" className="text-black" style={{ backgroundColor: 'rgb(175, 143, 111)' }}>
       <SidebarHeader>
         <div className="px-2 py-1">
-          <p className="text-sm text-muted-foreground">Online Book Store</p>
-          <h2 className="text-lg font-semibold">Admin Panel</h2>
+          <p className="text-sm text-black/80">Readex</p>
+          <h2 className="text-lg font-semibold text-black">Admin Panel</h2>
         </div>
       </SidebarHeader>
 
@@ -89,8 +90,8 @@ export default function AppSidebar() {
                     location.pathname.startsWith(item.to));
 
                 return (
-                  <SidebarMenuItem key={item.to} className="hover:bg-amber-900">
-                    <SidebarMenuButton asChild isActive={isActive}>
+                  <SidebarMenuItem key={item.to} className="hover:bg-white/20">
+                    <SidebarMenuButton asChild isActive={isActive} className="text-black">
                       <NavLink to={item.to}>
                         <Icon />
                         <span>{item.label}</span>
@@ -109,11 +110,15 @@ export default function AppSidebar() {
       <SidebarFooter>
         {/* adding an icon profile for the admin and a button for signing out */}
          <div className="flex items-center gap-2 px-4 py-3">
-            <div className="h-8 w-8 rounded-full bg-gray-500" />
+            <img
+              src={profilePhoto}
+              alt="Admin Profile"
+              className="h-8 w-8 rounded-full border border-white/40 object-cover"
+            />
             <div>
-              <p className="text-sm font-medium">Admin User</p>
+              <p className="text-sm font-medium text-white">Admin User</p>
               <button
-                className="text-xs text-muted-foreground hover:text-muted-foreground/80 border rounded px-2 py-1 mt-1 hover:bg-red-600"
+                className="text-xs text-white hover:text-white border border-white rounded px-2 py-1 mt-1 hover:bg-white/20"
                 onClick={() => {
                   alert("Sign out clicked");
                 }}

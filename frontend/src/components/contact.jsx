@@ -1,4 +1,5 @@
 import Navigation from "./navigation";
+import bgImage from "../assets/Blank-Patina-Paper-4-GraphicsFairy-768x1210.jpg";
 import {
   Card,
   CardContent,
@@ -9,7 +10,7 @@ import {
 
 export default function Contact() {
   return (
-    <div className="min-h-screen bg-neutral-950 text-white">
+    <div className="min-h-screen text-black" style={{ backgroundImage: `url(${bgImage})`, backgroundAttachment: "fixed" }}>
       <Navigation />
 
       <main className="mx-auto max-w-6xl px-4 py-10">
@@ -98,7 +99,7 @@ export default function Contact() {
               <CardContent className="space-y-4 text-sm text-white/80">
                 <div>
                   <p className="text-white/50">Email</p>
-                  <p>support@onlinebookstore.com</p>
+                  <p>support@readex.com</p>
                 </div>
                 <div>
                   <p className="text-white/50">Phone</p>

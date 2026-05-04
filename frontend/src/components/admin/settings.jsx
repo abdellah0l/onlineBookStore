@@ -5,6 +5,7 @@ import { Label } from "../ui/label";
 import { Spinner } from "../ui/spinner";
 import { useAdminData } from "../../contexts/AdminDataContext";
 import { useAuth } from "../../contexts/AuthContext";
+import profilePhoto from "../../assets/photo_2026-05-04_02-11-40.jpg";
 
 export default function AdminSettings() {
     const { updateSettings } = useAdminData();
@@ -60,7 +61,11 @@ export default function AdminSettings() {
             <div className="rounded-[36px] border border-violet-400/60 bg-neutral-950 p-8 text-white shadow-[0_0_0_1px_rgba(167,139,250,0.18)]">
                 <form className="grid gap-8 lg:grid-cols-[220px_1fr]" onSubmit={handleSubmit}>
                     <div className="flex flex-col items-center gap-4 text-center">
-                        <div className="h-36 w-36 rounded-full border-4 border-white/70 bg-neutral-900" />
+                        <img
+                            src={profilePhoto}
+                            alt="Admin Profile"
+                            className="h-36 w-36 rounded-full border-4 border-white/70 object-cover"
+                        />
                         <p className="text-lg font-semibold">Admin</p>
                     </div>
 

@@ -1,5 +1,6 @@
 
 import Navigation from "./navigation";
+import bgImage from "../assets/Blank-Patina-Paper-4-GraphicsFairy-768x1210.jpg";
 
 const featureCards = [
 	{
@@ -44,9 +45,8 @@ const adminHighlights = [
 
 export default function Features() {
 	return (
-		<div className="min-h-screen bg-neutral-950 text-white">
+			<div className="min-h-screen text-black" style={{ backgroundImage: `url(${bgImage})`, backgroundAttachment: "fixed" }}>
 			<Navigation />
-
 			<main className="mx-auto max-w-6xl px-4 py-10">
 				<div className="rounded-[32px] border border-white/20 bg-neutral-950 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.08)]">
 					<div className="relative overflow-hidden rounded-[28px] border border-white/15 bg-gradient-to-br from-amber-950/60 via-neutral-950 to-neutral-950 p-6">

@@ -4,6 +4,7 @@ import Navigation from "./navigation";
 import { Button } from "./ui/button";
 import { Spinner } from "./ui/spinner";
 import { useData } from "../contexts/DataContext";
+import bgImage from "../assets/Blank-Patina-Paper-4-GraphicsFairy-768x1210.jpg";
 import { toast } from "sonner";
 
 export default function BooksById() {
@@ -102,7 +103,7 @@ export default function BooksById() {
     currentBook?.genres?.map((genre) => genre.name).join(", ") || "Unknown";
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white">
+    <div className="min-h-screen text-black" style={{ backgroundImage: `url(${bgImage})`, backgroundAttachment: "fixed" }}>
       <Navigation />
 
       <div className="relative overflow-hidden h-screen">
@@ -138,19 +139,19 @@ export default function BooksById() {
                     />
                   </div>
                     <div className="flex w-full flex-col gap-2">
-                      <Button className="bg-sky-500 text-white hover:bg-sky-400" onClick={handleWishlist}>
+                      <Button className="bg-sky-500 text-black hover:bg-sky-400" onClick={handleWishlist}>
                         + Add to Wishlist
                       </Button>
                       {!hasPurchased ? (
                         <Button
-                          className="bg-emerald-500 text-white hover:bg-emerald-400"
+                          className="bg-emerald-500 text-black hover:bg-emerald-400"
                           onClick={handleBuy}
                           disabled={isCheckingOut}
                         >
                           {isCheckingOut ? 'Processing…' : `Buy for ${currentBook?.price} DA`}
                         </Button>
                       ) : (
-                        <Button className="bg-amber-500 text-white hover:bg-amber-400" onClick={handleStartReading}>
+                        <Button className="bg-amber-500 text-black hover:bg-amber-400" onClick={handleStartReading}>
                           Start Reading
                         </Button>
                       )}

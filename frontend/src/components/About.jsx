@@ -1,4 +1,5 @@
 import Navigation from "./navigation";
+import bgImage from "../assets/Blank-Patina-Paper-4-GraphicsFairy-768x1210.jpg";
 
 export default function About() {
 
@@ -9,12 +10,13 @@ export default function About() {
         width: "100vw",
         fontFamily: "'Caveat', cursive",
         overflow: "hidden",
-        backgroundImage: 'url("/happy-cutout3.png")',
+        backgroundImage: `url(${bgImage})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
         display: "flex",
         flexDirection: "column",
+        color: "#000000",
       }}
     >
       <Navigation />

@@ -95,8 +95,8 @@ export default function AdminAnalytics() {
 
   if (error) {
     return (
-      <div className="m-6 rounded-3xl border border-white/20 bg-neutral-950 p-6 text-white">
-        <p className="text-white/70">{error}</p>
+      <div className="m-6 rounded-3xl border border-white/20 bg-neutral-950 p-6 text-black">
+        <p className="text-black/70">{error}</p>
       </div>
     );
   }
@@ -123,7 +123,7 @@ export default function AdminAnalytics() {
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-3xl border border-violet-400/50 bg-neutral-950 p-5">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-white">Top Selling Genres</h3>
+            <h3 className="text-lg font-semibold text-black">Top Selling Genres</h3>
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-[220px_1fr]">
             <ChartContainer
@@ -154,7 +154,7 @@ export default function AdminAnalytics() {
               {topSellingGenres.map((genre, index) => (
                 <div
                   key={genre.genre.id}
-                  className="flex items-center gap-3 text-sm text-white/80"
+                  className="flex items-center gap-3 text-sm text-black/80"
                 >
                   <span
                     className="inline-flex h-4 w-4 items-center justify-center rounded-sm border border-white/40"
@@ -163,7 +163,7 @@ export default function AdminAnalytics() {
                     ✓
                   </span>
                   <span className="flex-1">{genre.genre.name}</span>
-                  <span className="text-white/60">{genre.sales}</span>
+                  <span className="text-black/60">{genre.sales}</span>
                 </div>
               ))}
             </div>
@@ -171,7 +171,7 @@ export default function AdminAnalytics() {
         </div>
 
         <div className="rounded-3xl border border-violet-400/50 bg-neutral-950 p-5">
-          <h3 className="text-lg font-semibold text-white">Sales Revenue</h3>
+          <h3 className="text-lg font-semibold text-black">Sales Revenue</h3>
           <ChartContainer
             config={salesConfig}
             className="mt-4 h-52 w-full aspect-auto"
@@ -196,8 +196,8 @@ export default function AdminAnalytics() {
 
         <div className="rounded-3xl border border-violet-400/50 bg-neutral-950 p-5">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-white">Order Count</h3>
-            <span className="text-sm text-white/60">{ordersCount} total</span>
+            <h3 className="text-lg font-semibold text-black">Order Count</h3>
+            <span className="text-sm text-black/60">{ordersCount} total</span>
           </div>
           <ChartContainer
             config={ordersConfig}
@@ -218,7 +218,7 @@ export default function AdminAnalytics() {
         </div>
 
         <div className="rounded-3xl border border-violet-400/50 bg-neutral-950 p-5">
-          <h3 className="text-lg font-semibold text-white">Top Selling Books</h3>
+            <h3 className="text-lg font-semibold text-black">Top Selling Books</h3>
           <div className="mt-5 space-y-3">
             {topSellingBooks.map((book, index) => (
               <div
@@ -233,7 +233,7 @@ export default function AdminAnalytics() {
                     {book.sales} total sales
                   </p>
                 </div>
-                <span className="text-sm text-white/50">#{book.book.id}</span>
+                <span className="text-sm text-black/50">#{book.book.id}</span>
               </div>
             ))}
           </div>

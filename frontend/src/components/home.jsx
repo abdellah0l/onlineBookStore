@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Navigation from "./navigation";
 import { Spinner } from "./ui/spinner";
 import { useData } from "../contexts/DataContext";
+import bgImage from "../assets/Blank-Patina-Paper-4-GraphicsFairy-768x1210.jpg";
 import {
 	Carousel,
 	CarouselContent,
@@ -68,7 +69,7 @@ export default function Home() {
 	const selectedBook = books[selectedIndex] ?? books[0];
 
 	return (
-		<div className="min-h-screen bg-neutral-950 text-white">
+		<div className="min-h-screen text-black" style={{ backgroundImage: `url(${bgImage})`, backgroundAttachment: "fixed" }}>
 			<Navigation />
 
 			<main className="px-4 pb-10 pt-6">

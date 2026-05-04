@@ -5,6 +5,7 @@ import SearchBar from "./search-bar";
 import { Button } from "./ui/button";
 import { Spinner } from "./ui/spinner";
 import { useData } from "../contexts/DataContext";
+import bgImage from "../assets/Blank-Patina-Paper-4-GraphicsFairy-768x1210.jpg";
 import {
   Pagination,
   PaginationContent,
@@ -136,7 +137,7 @@ export default function Books() {
   );
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white">
+    <div className="min-h-screen text-black" style={{ backgroundImage: `url(${bgImage})`, backgroundAttachment: "fixed" }}>
       <Navigation />
       <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="flex flex-col items-center text-center">

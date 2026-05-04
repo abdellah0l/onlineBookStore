@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import Navigation from "./navigation";
 import { Spinner } from "./ui/spinner";
 import { useData } from "../contexts/DataContext";
+import profilePhoto from "../assets/photo_2026-05-04_02-11-40.jpg";
+import bgImage from "../assets/Blank-Patina-Paper-4-GraphicsFairy-768x1210.jpg";
 
 const statusStyles = {
 	finished: "border-emerald-400/70 text-emerald-300",
@@ -56,7 +58,7 @@ export default function Profile() {
 	};
 
 	return (
-		<div className="min-h-screen bg-neutral-950 text-white">
+		<div className="min-h-screen text-black" style={{ backgroundImage: `url(${bgImage})`, backgroundAttachment: "fixed" }}>
 			<Navigation />
 
 			<main className="mx-auto max-w-6xl px-4 py-8">
@@ -73,28 +75,32 @@ export default function Profile() {
 						<div>
 							<div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
 						<div className="flex items-center gap-4">
-							<div className="h-16 w-16 rounded-full border border-white/40 bg-white/10" />
+							<img
+								src={profilePhoto}
+								alt="Profile"
+								className="h-16 w-16 rounded-full border border-white/40 object-cover"
+							/>
 							<div>
 								<h1 className="text-2xl font-semibold">{profile.username}</h1>
-								<p className="text-sm text-white/60">{profile.email}</p>
+								<p className="text-sm text-black/60">{profile.email}</p>
 							</div>
 						</div>
 						<div className="flex flex-wrap gap-3 text-sm">
 							<div className="rounded-2xl border border-white/20 bg-white/[0.03] px-4 py-2">
-								<p className="text-white/60">Orders</p>
-								<p className="text-lg font-semibold text-white">
+						<p className="text-black/60">Orders</p>
+						<p className="text-lg font-semibold text-black">
 									{totals.orders}
 								</p>
 							</div>
 							<div className="rounded-2xl border border-white/20 bg-white/[0.03] px-4 py-2">
-								<p className="text-white/60">Wishlist</p>
-								<p className="text-lg font-semibold text-white">
+						<p className="text-black/60">Wishlist</p>
+						<p className="text-lg font-semibold text-black">
 									{totals.wishlist}
 								</p>
 							</div>
 							<div className="rounded-2xl border border-white/20 bg-white/[0.03] px-4 py-2">
-								<p className="text-white/60">Total spent</p>
-								<p className="text-lg font-semibold text-white">
+						<p className="text-black/60">Total spent</p>
+						<p className="text-lg font-semibold text-black">
 									{totals.spent} DA
 								</p>
 							</div>
@@ -129,7 +135,7 @@ export default function Profile() {
 												<div>
 													<Link
 														to={`/books/${order.book.id}`}
-														className="text-sm font-semibold text-white hover:underline"
+																className="text-sm font-semibold text-black hover:underline"
 													>
 														{order.book.title}
 													</Link>
@@ -139,7 +145,7 @@ export default function Profile() {
 												</div>
 											</div>
 											<div className="flex items-center gap-4 text-sm">
-												<span className="text-white/70">
+														<span className="text-black/70">
 													{order.amount} DA
 												</span>
 												<span
