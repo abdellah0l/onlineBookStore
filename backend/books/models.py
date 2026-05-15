@@ -75,7 +75,13 @@ class Book(models.Model):
             "price": float(self.price),
             "description": self.description,
             "cover_image_url": self.cover_image_url,
-            "genres": [genre.to_dict() for genre in self.genres.all()],
+            "genres": [
+                {
+                    "id": str(genre_id),
+                    "name": genre_name,
+                }
+                for genre_id, genre_name in self.genres.values_list("id", "name")
+            ],
         }
 
 

@@ -225,10 +225,16 @@ def genres_list(request):
     if request.method != 'GET':
         return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
 
-    genres = Genre.objects.all().order_by('name')
+    genres = Genre.objects.values('id', 'name').order_by('name')
     return JsonResponse({
         'success': True,
-        'genres': [genre.to_dict() for genre in genres]
+        'genres': [
+            {
+                'id': str(genre['id']),
+                'name': genre['name'],
+            }
+            for genre in genres
+        ]
     })
 
 
@@ -578,8 +584,17 @@ def admin_genres(request):
         return JsonResponse({'success': False, 'message': 'Unauthorized'}, status=401)
 
     if request.method == 'GET':
-        genres = Genre.objects.all().order_by('name')
-        return JsonResponse({'success': True, 'genres': [g.to_dict() for g in genres]})
+        genres = Genre.objects.values('id', 'name').order_by('name')
+        return JsonResponse({
+            'success': True,
+            'genres': [
+                {
+                    'id': str(genre['id']),
+                    'name': genre['name'],
+                }
+                for genre in genres
+            ]
+        })
 
     if request.method == 'POST':
         data = get_request_data(request)
@@ -587,7 +602,7 @@ def admin_genres(request):
         if not name:
             return JsonResponse({'success': False, 'message': 'name is required'}, status=400)
         g = Genre.objects.create(name=name)
-        return JsonResponse({'success': True, 'message': 'Genre created', 'genre': g.to_dict()})
+        return JsonResponse({'success': True, 'message': 'Genre created', 'genre': {'id': str(g.id), 'name': g.name}})
 
 
 def admin_genre_detail(request, genre_id):
@@ -609,13 +624,13 @@ def admin_genre_detail(request, genre_id):
             return JsonResponse({'success': False, 'message': 'name is required'}, status=400)
         genre.name = name
         genre.save()
-        return JsonResponse({'success': True, 'message': 'Genre updated', 'genre': genre.to_dict()})
+        return JsonResponse({'success': True, 'message': 'Genre updated', 'genre': {'id': str(genre.id), 'name': genre.name}})
 
     if request.method == 'DELETE':
         genre.delete()
         return JsonResponse({'success': True, 'message': 'Genre deleted'})
 
-    return JsonResponse({'success': True, 'genre': genre.to_dict()})
+    return JsonResponse({'success': True, 'genre': {'id': str(genre.id), 'name': genre.name}})
 
 
 def admin_users(request):
