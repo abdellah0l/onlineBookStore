@@ -14,7 +14,7 @@ import Profile from "./components/profile";
 import Home from "./components/home";
 import Books from "./components/books";
 import BooksById from "./components/books-by-id";
-import About from "./components/about";
+import About from "./components/About";
 import Features from "./components/features";
 import Contact from "./components/contact";
 import AdminLayout from "./components/admin/admin-layout";
