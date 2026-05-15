@@ -18,6 +18,13 @@ LOCAL_FRONTEND_ORIGINS = [
 allowed_hosts_raw = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_raw.split(",") if host.strip()]
 
+# Add Render domain if in production
+if not DEBUG:
+    ALLOWED_HOSTS.extend([
+        "onlinebookstore-api-8aju.onrender.com",
+        ".onrender.com",
+    ])
+
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.staticfiles",
