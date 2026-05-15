@@ -189,7 +189,7 @@ def debug_checkout_state(book, amount, success_url, base_url):
     )
 
 
-def create_chargily_checkout(amount, book, user):
+def create_chargily_checkout(amount, book, user, order_reference):
     secret_key = os.environ.get('CHARGILY_SECRET_KEY')
     if not secret_key:
         return None, None, {'success': False, 'message': 'CHARGILY_SECRET_KEY is not configured'}
@@ -202,6 +202,11 @@ def create_chargily_checkout(amount, book, user):
         'amount': amount,
         'currency': 'dzd',
         'success_url': success_url,
+        'metadata': {
+            'order_reference': order_reference,
+            'user_id': str(user.id),
+            'book_id': str(book.id),
+        },
     }
 
     headers = {
@@ -280,7 +285,8 @@ def orders_checkout(request):
     except (InvalidOperation, ValueError, TypeError):
         return JsonResponse({'success': False, 'message': 'Invalid book price'}, status=400)
 
-    checkout_url, payment_id, err = create_chargily_checkout(amount, book, user)
+    order_reference = str(uuid.uuid4())
+    checkout_url, payment_id, err = create_chargily_checkout(amount, book, user, order_reference)
     if err:
         return JsonResponse(err, status=502)
 
@@ -289,7 +295,7 @@ def orders_checkout(request):
         book=book,
         status='pending',
         amount=book.price,
-        chargily_payment_id=payment_id
+        chargily_payment_id=f'{payment_id}|{order_reference}'
     )
 
     return JsonResponse({'success': True, 'checkout_url': checkout_url, 'chargily_payment_id': payment_id})
@@ -852,12 +858,30 @@ def chargily_webhook(request):
     payment_id = payment_id or nested_checkout.get('id') or nested_checkout.get('payment_id') or nested_checkout.get('checkout_id')
     event_type = event_type or nested_checkout.get('status')
 
-    if not payment_id:
+    metadata = {}
+    for candidate in (data.get('metadata'), payload_data.get('metadata'), nested_checkout.get('metadata')):
+        if isinstance(candidate, dict):
+            metadata.update(candidate)
+
+    order_reference = metadata.get('order_reference') or metadata.get('order_id') or metadata.get('reference')
+
+    order = None
+    if payment_id:
+        order = (
+            Order.objects.filter(chargily_payment_id=payment_id).first()
+            or Order.objects.filter(chargily_payment_id__startswith=f'{payment_id}|').first()
+        )
+
+    if order is None and order_reference:
+        order = Order.objects.filter(chargily_payment_id__endswith=f'|{order_reference}').first()
+
+    if not payment_id and not order_reference:
         logger.warning('Chargily webhook missing payment id: %s', data)
         return JsonResponse({'success': False, 'message': 'Missing payment id'}, status=400)
 
     try:
-        order = Order.objects.get(chargily_payment_id=payment_id)
+        if order is None:
+            raise Order.DoesNotExist
         if event_type in ('paid', 'checkout.paid', 'paid_success', 'payment.paid', 'checkout.payment.paid'):
             order.status = 'finished'
             order.purchased_at = timezone.now()
@@ -868,7 +892,7 @@ def chargily_webhook(request):
         # else: ignore other statuses
     except Order.DoesNotExist:
         # If order doesn't exist, we might create one or ignore; we'll ignore for now
-        logger.warning('Chargily webhook payment id not found in orders: %s', payment_id)
+        logger.warning('Chargily webhook payment id not found in orders: %s; order_reference: %s', payment_id, order_reference)
         pass
 
     return JsonResponse({'success': True})
