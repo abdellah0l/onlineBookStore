@@ -1,6 +1,7 @@
 import json
 import os
 import requests
+import logging
 from decimal import Decimal, InvalidOperation
 # simplified checkout uses `requests` directly
 from django.http import JsonResponse
@@ -15,6 +16,9 @@ from django.core.paginator import Paginator
 from django.utils import timezone
 from datetime import timedelta
 import uuid
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_request_data(request):
@@ -820,30 +824,51 @@ def books_read(request, book_id):
 
 @csrf_exempt
 def chargily_webhook(request):
-    # Minimal webhook handler: expects JSON with chargily_payment_id and status
-    # In production validate signature/header provided by Chargily
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
 
     data = get_request_data(request)
-    payment_id = data.get('chargily_payment_id') or data.get('payment_id')
-    status = data.get('status') or data.get('event')
+    logger.info('Chargily webhook received: %s', data)
+
+    event_type = (
+        data.get('event')
+        or data.get('type')
+        or data.get('event_type')
+        or data.get('action')
+    )
+
+    payment_id = (
+        data.get('chargily_payment_id')
+        or data.get('payment_id')
+        or data.get('checkout_id')
+        or data.get('id')
+    )
+
+    payload_data = data.get('data') if isinstance(data.get('data'), dict) else {}
+    payment_id = payment_id or payload_data.get('id') or payload_data.get('payment_id') or payload_data.get('checkout_id')
+    event_type = event_type or payload_data.get('status') or payload_data.get('event')
+
+    nested_checkout = payload_data.get('checkout') if isinstance(payload_data.get('checkout'), dict) else {}
+    payment_id = payment_id or nested_checkout.get('id') or nested_checkout.get('payment_id') or nested_checkout.get('checkout_id')
+    event_type = event_type or nested_checkout.get('status')
 
     if not payment_id:
+        logger.warning('Chargily webhook missing payment id: %s', data)
         return JsonResponse({'success': False, 'message': 'Missing payment id'}, status=400)
 
     try:
         order = Order.objects.get(chargily_payment_id=payment_id)
-        if status in ('paid', 'checkout.paid', 'paid_success'):
+        if event_type in ('paid', 'checkout.paid', 'paid_success', 'payment.paid', 'checkout.payment.paid'):
             order.status = 'finished'
             order.purchased_at = timezone.now()
             order.save()
-        elif status in ('cancelled', 'failed'):
+        elif event_type in ('cancelled', 'failed', 'checkout.cancelled', 'payment.failed'):
             order.status = 'cancelled'
             order.save()
         # else: ignore other statuses
     except Order.DoesNotExist:
         # If order doesn't exist, we might create one or ignore; we'll ignore for now
+        logger.warning('Chargily webhook payment id not found in orders: %s', payment_id)
         pass
 
     return JsonResponse({'success': True})
